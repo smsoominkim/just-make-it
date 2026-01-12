@@ -78,22 +78,31 @@ app.use((req, res, next) => {
   next();
 });
 
-async function warmUpDatabase() {
-  try {
-    log("Checking database connection...");
-    const connection = await pool.connect();
-    connection.release();
-    log("Database connection successful");
-    
-    await storage.initializeDefaultData();
-    log("Default data initialized");
-    
-    dbReady = true;
-    log("Database warm-up complete, ready to serve requests");
-  } catch (error) {
-    log(`Database connection failed: ${error}`);
-    console.error("Database warm-up failed:", error);
-    process.exit(1);
+async function warmUpDatabase(retries = 5, delay = 3000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      log(`Checking database connection (attempt ${attempt}/${retries})...`);
+      const connection = await pool.connect();
+      connection.release();
+      log("Database connection successful");
+      
+      await storage.initializeDefaultData();
+      log("Default data initialized");
+      
+      dbReady = true;
+      log("Database warm-up complete, ready to serve requests");
+      return;
+    } catch (error) {
+      log(`Database connection failed (attempt ${attempt}/${retries}): ${error}`);
+      
+      if (attempt < retries) {
+        log(`Retrying in ${delay / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.error("Database warm-up failed after all retries:", error);
+        log("App will continue without database - API requests will return 503");
+      }
+    }
   }
 }
 
