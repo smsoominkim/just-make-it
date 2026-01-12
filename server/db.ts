@@ -10,33 +10,64 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-const isProduction = process.env.NODE_ENV === "production";
-
-function getPoolConfig(): pg.PoolConfig {
+function createConnectionConfig() {
+  const databaseUrl = process.env.DATABASE_URL!;
   const connectorHostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const isProduction = process.env.NODE_ENV === "production";
   
-  // In production, MUST use connector hostname to access database from Cloud Run
+  console.log("=== Database Connection Config ===");
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+  console.log("REPLIT_CONNECTORS_HOSTNAME:", connectorHostname || "not set");
+  
   if (isProduction && connectorHostname) {
-    // Use PGDATABASE, PGUSER, PGPASSWORD if available, otherwise parse from DATABASE_URL
-    const databaseUrl = process.env.DATABASE_URL!;
-    const url = new URL(databaseUrl);
-    
-    const config: pg.PoolConfig = {
-      host: connectorHostname,
-      // No port - connector handles routing
-      database: process.env.PGDATABASE || url.pathname.slice(1),
-      user: process.env.PGUSER || url.username,
-      password: process.env.PGPASSWORD || decodeURIComponent(url.password),
-      ssl: { rejectUnauthorized: false },
-    };
-    console.log(`Production: Using connector ${connectorHostname}, database: ${config.database}`);
-    return config;
+    try {
+      const url = new URL(databaseUrl);
+      const dbName = url.pathname.replace("/", "");
+      
+      const config = {
+        host: connectorHostname,
+        database: dbName,
+        user: url.username,
+        password: url.password,
+        ssl: false,
+        connectionTimeoutMillis: 30000,
+        idleTimeoutMillis: 30000,
+        max: 10,
+      };
+      
+      console.log("Using Replit Connector:");
+      console.log("- Host:", connectorHostname);
+      console.log("- Database:", dbName);
+      console.log("- User:", url.username);
+      console.log("================================");
+      
+      return config;
+    } catch (error) {
+      console.error("Failed to parse DATABASE_URL:", error);
+    }
   }
   
-  // Development: use DATABASE_URL directly
-  console.log("Development: Using direct database connection");
-  return { connectionString: process.env.DATABASE_URL };
+  console.log("Using direct connection (development)");
+  console.log("================================");
+  
+  return {
+    connectionString: databaseUrl,
+    ssl: isProduction ? { rejectUnauthorized: false } : undefined,
+    connectionTimeoutMillis: 30000,
+    idleTimeoutMillis: 30000,
+    max: 10,
+  };
 }
 
-export const pool = new Pool(getPoolConfig());
+const poolConfig = createConnectionConfig();
+export const pool = new Pool(poolConfig);
+
+pool.on('error', (err) => {
+  console.error('Database pool error:', err);
+});
+
+pool.on('connect', () => {
+  console.log('Database pool: new client connected');
+});
+
 export const db = drizzle(pool, { schema });
