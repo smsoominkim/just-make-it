@@ -167,29 +167,31 @@ export function PostEditor({ weekNumber, onSuccess }: PostEditorProps) {
                 </div>
               </div>
               <FormControl>
-                <div data-color-mode="light" className="dark:hidden">
-                  <MDEditor
-                    value={content}
-                    onChange={(val) => {
-                      setContent(val || "");
-                      form.setValue("content", val || "");
-                    }}
-                    height={400}
-                    preview="edit"
-                    data-testid="editor-post-content"
-                  />
-                </div>
-                <div data-color-mode="dark" className="hidden dark:block">
-                  <MDEditor
-                    value={content}
-                    onChange={(val) => {
-                      setContent(val || "");
-                      form.setValue("content", val || "");
-                    }}
-                    height={400}
-                    preview="edit"
-                    data-testid="editor-post-content-dark"
-                  />
+                <div>
+                  <div data-color-mode="light" className="dark:hidden">
+                    <MDEditor
+                      value={content}
+                      onChange={(val) => {
+                        setContent(val || "");
+                        form.setValue("content", val || "");
+                      }}
+                      height={400}
+                      preview="edit"
+                      data-testid="editor-post-content"
+                    />
+                  </div>
+                  <div data-color-mode="dark" className="hidden dark:block">
+                    <MDEditor
+                      value={content}
+                      onChange={(val) => {
+                        setContent(val || "");
+                        form.setValue("content", val || "");
+                      }}
+                      height={400}
+                      preview="edit"
+                      data-testid="editor-post-content-dark"
+                    />
+                  </div>
                 </div>
               </FormControl>
               <FormMessage />
