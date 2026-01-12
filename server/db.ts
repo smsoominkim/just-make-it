@@ -11,17 +11,31 @@ if (!process.env.DATABASE_URL) {
 }
 
 const isProduction = process.env.NODE_ENV === "production";
-const connectorHostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
 
 function getPoolConfig(): pg.PoolConfig {
-  const databaseUrl = process.env.DATABASE_URL!;
+  // In production, use individual PG* environment variables if available
+  // These are automatically set by Replit for production deployments
+  if (isProduction && process.env.PGHOST) {
+    const config: pg.PoolConfig = {
+      host: process.env.PGHOST,
+      port: process.env.PGPORT ? parseInt(process.env.PGPORT) : undefined,
+      database: process.env.PGDATABASE,
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      ssl: { rejectUnauthorized: false },
+    };
+    console.log(`Using production PG config: host=${config.host}, database=${config.database}`);
+    return config;
+  }
   
+  // Fallback: use connector hostname if available
+  const connectorHostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   if (isProduction && connectorHostname) {
-    // Parse original URL to extract credentials and database name
+    const databaseUrl = process.env.DATABASE_URL!;
     const url = new URL(databaseUrl);
     const config: pg.PoolConfig = {
       host: connectorHostname,
-      database: url.pathname.slice(1), // Remove leading "/"
+      database: url.pathname.slice(1),
       user: url.username,
       password: decodeURIComponent(url.password),
       ssl: { rejectUnauthorized: false },
@@ -31,7 +45,7 @@ function getPoolConfig(): pg.PoolConfig {
   }
   
   console.log("Using direct database connection (development)");
-  return { connectionString: databaseUrl };
+  return { connectionString: process.env.DATABASE_URL };
 }
 
 export const pool = new Pool(getPoolConfig());
