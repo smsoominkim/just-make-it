@@ -2,6 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* MDEditor markdown preview styling */
+.wmde-markdown ol,
+.wmde-markdown ul {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.wmde-markdown ol {
+  list-style-type: decimal;
+}
+
+.wmde-markdown ul {
+  list-style-type: disc;
+}
+
+.wmde-markdown li {
+  margin: 0.25em 0;
+}
+
+.wmde-markdown li > ul,
+.wmde-markdown li > ol {
+  margin: 0.25em 0;
+}
+
+.wmde-markdown p {
+  margin: 0.5em 0;
+}
+
+.wmde-markdown img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);
