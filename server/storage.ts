@@ -1,74 +1,18 @@
-import { eq, and, desc, asc } from "drizzle-orm";
-import { db } from "./db";
-import {
-  users,
-  weeklyContent,
-  academyOverview,
-  posts,
-  comments,
-  mediaAssets,
-  defaultWeeklyContent,
-  type User,
-  type InsertUser,
-  type WeeklyContent,
-  type UpdateWeeklyContent,
-  type AcademyOverview,
-  type UpdateAcademyOverview,
-  type Post as DbPost,
-  type InsertPost,
-  type Comment as DbComment,
-  type InsertComment,
-  type MediaAsset as DbMediaAsset,
+import { randomUUID } from "crypto";
+import type {
+  User,
+  InsertUser,
+  WeeklyContent,
+  UpdateWeeklyContent,
+  AcademyOverview,
+  UpdateAcademyOverview,
+  Post,
+  InsertPost,
+  Comment,
+  InsertComment,
+  MediaAsset,
 } from "@shared/schema";
-
-export interface Post {
-  id: string;
-  weekNumber: number;
-  title: string;
-  content: string;
-  authorId: string;
-  authorNickname: string;
-  createdAt: string;
-  isNotice: boolean;
-}
-
-export interface Comment {
-  id: string;
-  postId: string;
-  authorId: string;
-  authorNickname: string;
-  content: string;
-  createdAt: string;
-}
-
-export interface MediaAsset {
-  id: string;
-  filename: string;
-  mimeType: string;
-  data: string;
-  createdAt: string;
-}
-
-function serializePost(post: DbPost): Post {
-  return {
-    ...post,
-    createdAt: post.createdAt.toISOString(),
-  };
-}
-
-function serializeComment(comment: DbComment): Comment {
-  return {
-    ...comment,
-    createdAt: comment.createdAt.toISOString(),
-  };
-}
-
-function serializeMediaAsset(asset: DbMediaAsset): MediaAsset {
-  return {
-    ...asset,
-    createdAt: asset.createdAt.toISOString(),
-  };
-}
+import { defaultWeeklyContent } from "@shared/schema";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -99,219 +43,215 @@ export interface IStorage {
 
   createMediaAsset(filename: string, mimeType: string, data: string): Promise<MediaAsset>;
   getMediaAsset(id: string): Promise<MediaAsset | undefined>;
-
-  initializeDefaultData(): Promise<void>;
 }
 
-export class DatabaseStorage implements IStorage {
+export class MemStorage implements IStorage {
+  private users: Map<string, User>;
+  private weeklyContent: Map<number, WeeklyContent>;
+  private academyOverview: AcademyOverview;
+  private posts: Map<string, Post>;
+  private comments: Map<string, Comment>;
+  private mediaAssets: Map<string, MediaAsset>;
+
+  constructor() {
+    this.users = new Map();
+    this.weeklyContent = new Map();
+    this.posts = new Map();
+    this.comments = new Map();
+    this.mediaAssets = new Map();
+
+    defaultWeeklyContent.forEach((content) => {
+      const id = randomUUID();
+      this.weeklyContent.set(content.weekNumber, { ...content, id });
+    });
+
+    this.academyOverview = {
+      id: randomUUID(),
+      title: "일단만들어",
+      description:
+        "복잡한 기능 없이 '수업 수강'과 '과제 공유'에만 집중하는 직관적인 학습 플랫폼입니다. AI와 함께 아이디어를 현실로 만들어보세요.",
+      imageUrl: "",
+    };
+
+    const adminId = randomUUID();
+    this.users.set(adminId, {
+      id: adminId,
+      email: "admin@justmakeit.com",
+      password: "admin123",
+      nickname: "관리자",
+      role: "admin",
+    });
+  }
+
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    return this.users.get(id);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user || undefined;
+    return Array.from(this.users.values()).find((user) => user.email === email);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values({
-        email: insertUser.email,
-        password: insertUser.password,
-        nickname: insertUser.nickname,
-        role: "student",
-      })
-      .returning();
+    const id = randomUUID();
+    const user: User = {
+      ...insertUser,
+      id,
+      role: "student",
+    };
+    this.users.set(id, user);
     return user;
   }
 
   async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    return Array.from(this.users.values());
   }
 
   async deleteUser(id: string): Promise<void> {
-    await db.delete(users).where(eq(users.id, id));
+    this.users.delete(id);
   }
 
   async getWeeklyContent(weekNumber: number): Promise<WeeklyContent | undefined> {
-    const [content] = await db.select().from(weeklyContent).where(eq(weeklyContent.weekNumber, weekNumber));
-    return content || undefined;
+    return this.weeklyContent.get(weekNumber);
   }
 
   async getAllWeeklyContent(): Promise<WeeklyContent[]> {
-    return await db.select().from(weeklyContent).orderBy(asc(weeklyContent.weekNumber));
+    return Array.from(this.weeklyContent.values()).sort((a, b) => a.weekNumber - b.weekNumber);
   }
 
-  async updateWeeklyContent(weekNumber: number, content: UpdateWeeklyContent): Promise<WeeklyContent | undefined> {
-    const [updated] = await db
-      .update(weeklyContent)
-      .set({
-        title: content.title,
-        youtubeUrl: content.youtubeUrl || "",
-        materialsUrl: content.materialsUrl || "",
-        learningObjectives: content.learningObjectives || "",
-        assignment: content.assignment || "",
-      })
-      .where(eq(weeklyContent.weekNumber, weekNumber))
-      .returning();
-    return updated || undefined;
-  }
+  async updateWeeklyContent(
+    weekNumber: number,
+    content: UpdateWeeklyContent
+  ): Promise<WeeklyContent | undefined> {
+    const existing = this.weeklyContent.get(weekNumber);
+    if (!existing) return undefined;
 
-  async getAcademyOverview(): Promise<AcademyOverview> {
-    const [overview] = await db.select().from(academyOverview);
-    if (!overview) {
-      const [created] = await db
-        .insert(academyOverview)
-        .values({
-          title: "일단만들어",
-          description: "복잡한 기능 없이 '수업 수강'과 '과제 공유'에만 집중하는 직관적인 학습 플랫폼입니다. AI와 함께 아이디어를 현실로 만들어보세요.",
-          imageUrl: "",
-        })
-        .returning();
-      return created;
-    }
-    return overview;
-  }
-
-  async updateAcademyOverview(data: UpdateAcademyOverview): Promise<AcademyOverview> {
-    const existing = await this.getAcademyOverview();
-    const [updated] = await db
-      .update(academyOverview)
-      .set({
-        title: data.title,
-        description: data.description,
-        imageUrl: data.imageUrl || "",
-      })
-      .where(eq(academyOverview.id, existing.id))
-      .returning();
+    const updated: WeeklyContent = {
+      ...existing,
+      ...content,
+    };
+    this.weeklyContent.set(weekNumber, updated);
     return updated;
   }
 
+  async getAcademyOverview(): Promise<AcademyOverview> {
+    return this.academyOverview;
+  }
+
+  async updateAcademyOverview(data: UpdateAcademyOverview): Promise<AcademyOverview> {
+    this.academyOverview = {
+      ...this.academyOverview,
+      ...data,
+    };
+    return this.academyOverview;
+  }
+
   async createPost(authorId: string, authorNickname: string, post: InsertPost): Promise<Post> {
-    const [newPost] = await db
-      .insert(posts)
-      .values({
-        weekNumber: post.weekNumber,
-        title: post.title,
-        content: post.content,
-        authorId,
-        authorNickname,
-        isNotice: post.isNotice || false,
-      })
-      .returning();
-    return serializePost(newPost);
+    const id = randomUUID();
+    const newPost: Post = {
+      id,
+      weekNumber: post.weekNumber,
+      title: post.title,
+      content: post.content,
+      authorId,
+      authorNickname,
+      createdAt: new Date().toISOString(),
+      isNotice: post.isNotice || false,
+    };
+    this.posts.set(id, newPost);
+    return newPost;
   }
 
   async getPost(id: string): Promise<Post | undefined> {
-    const [post] = await db.select().from(posts).where(eq(posts.id, id));
-    return post ? serializePost(post) : undefined;
+    return this.posts.get(id);
   }
 
   async getPostsByWeek(weekNumber: number): Promise<Post[]> {
-    const allPosts = await db
-      .select()
-      .from(posts)
-      .where(eq(posts.weekNumber, weekNumber))
-      .orderBy(desc(posts.isNotice), desc(posts.createdAt));
-    return allPosts.map(serializePost);
+    const posts = Array.from(this.posts.values())
+      .filter((post) => post.weekNumber === weekNumber);
+    return posts.sort((a, b) => {
+      if (a.isNotice && !b.isNotice) return -1;
+      if (!a.isNotice && b.isNotice) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   }
 
   async getAllPosts(): Promise<Post[]> {
-    const allPosts = await db.select().from(posts).orderBy(desc(posts.createdAt));
-    return allPosts.map(serializePost);
+    return Array.from(this.posts.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   async updatePost(id: string, data: { title: string; content: string }): Promise<Post | undefined> {
-    const [updated] = await db
-      .update(posts)
-      .set({
-        title: data.title,
-        content: data.content,
-      })
-      .where(eq(posts.id, id))
-      .returning();
-    return updated ? serializePost(updated) : undefined;
+    const existing = this.posts.get(id);
+    if (!existing) return undefined;
+
+    const updated: Post = {
+      ...existing,
+      title: data.title,
+      content: data.content,
+    };
+    this.posts.set(id, updated);
+    return updated;
   }
 
   async deletePost(id: string): Promise<void> {
-    await db.delete(comments).where(eq(comments.postId, id));
-    await db.delete(posts).where(eq(posts.id, id));
+    this.posts.delete(id);
+    const commentsToDelete = Array.from(this.comments.entries())
+      .filter(([, comment]) => comment.postId === id)
+      .map(([commentId]) => commentId);
+    commentsToDelete.forEach((commentId) => this.comments.delete(commentId));
   }
 
   async getUserPostsByWeek(userId: string, weekNumber: number): Promise<Post[]> {
-    const userPosts = await db
-      .select()
-      .from(posts)
-      .where(and(eq(posts.authorId, userId), eq(posts.weekNumber, weekNumber)));
-    return userPosts.map(serializePost);
+    return Array.from(this.posts.values()).filter(
+      (post) => post.authorId === userId && post.weekNumber === weekNumber
+    );
   }
 
   async createComment(authorId: string, authorNickname: string, comment: InsertComment): Promise<Comment> {
-    const [newComment] = await db
-      .insert(comments)
-      .values({
-        postId: comment.postId,
-        authorId,
-        authorNickname,
-        content: comment.content,
-      })
-      .returning();
-    return serializeComment(newComment);
+    const id = randomUUID();
+    const newComment: Comment = {
+      id,
+      postId: comment.postId,
+      authorId,
+      authorNickname,
+      content: comment.content,
+      createdAt: new Date().toISOString(),
+    };
+    this.comments.set(id, newComment);
+    return newComment;
   }
 
   async getComment(id: string): Promise<Comment | undefined> {
-    const [comment] = await db.select().from(comments).where(eq(comments.id, id));
-    return comment ? serializeComment(comment) : undefined;
+    return this.comments.get(id);
   }
 
   async getCommentsByPost(postId: string): Promise<Comment[]> {
-    const allComments = await db.select().from(comments).where(eq(comments.postId, postId)).orderBy(asc(comments.createdAt));
-    return allComments.map(serializeComment);
+    return Array.from(this.comments.values())
+      .filter((comment) => comment.postId === postId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 
   async deleteComment(id: string): Promise<void> {
-    await db.delete(comments).where(eq(comments.id, id));
+    this.comments.delete(id);
   }
 
   async createMediaAsset(filename: string, mimeType: string, data: string): Promise<MediaAsset> {
-    const [asset] = await db
-      .insert(mediaAssets)
-      .values({
-        filename,
-        mimeType,
-        data,
-      })
-      .returning();
-    return serializeMediaAsset(asset);
+    const id = randomUUID();
+    const asset: MediaAsset = {
+      id,
+      filename,
+      mimeType,
+      data,
+      createdAt: new Date().toISOString(),
+    };
+    this.mediaAssets.set(id, asset);
+    return asset;
   }
 
   async getMediaAsset(id: string): Promise<MediaAsset | undefined> {
-    const [asset] = await db.select().from(mediaAssets).where(eq(mediaAssets.id, id));
-    return asset ? serializeMediaAsset(asset) : undefined;
-  }
-
-  async initializeDefaultData(): Promise<void> {
-    const existingAdmin = await this.getUserByEmail("admin@justmakeit.com");
-    if (!existingAdmin) {
-      await db.insert(users).values({
-        email: "admin@justmakeit.com",
-        password: "admin123",
-        nickname: "관리자",
-        role: "admin",
-      });
-    }
-
-    const existingContent = await this.getAllWeeklyContent();
-    if (existingContent.length === 0) {
-      for (const content of defaultWeeklyContent) {
-        await db.insert(weeklyContent).values(content);
-      }
-    }
-
-    await this.getAcademyOverview();
+    return this.mediaAssets.get(id);
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();

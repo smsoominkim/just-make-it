@@ -1,72 +1,14 @@
 import { z } from "zod";
-import { pgTable, varchar, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { sql } from "drizzle-orm";
 
-// Database Tables
+// User schema
+export interface User {
+  id: string;
+  email: string;
+  password: string;
+  nickname: string;
+  role: "student" | "admin";
+}
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email", { length: 255 }).notNull().unique(),
-  password: varchar("password", { length: 255 }).notNull(),
-  nickname: varchar("nickname", { length: 100 }).notNull(),
-  role: varchar("role", { length: 20 }).notNull().default("student"),
-});
-
-export const weeklyContent = pgTable("weekly_content", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  weekNumber: integer("week_number").notNull().unique(),
-  title: varchar("title", { length: 500 }).notNull(),
-  youtubeUrl: text("youtube_url").notNull().default(""),
-  materialsUrl: text("materials_url").notNull().default(""),
-  learningObjectives: text("learning_objectives").notNull().default(""),
-  assignment: text("assignment").notNull().default(""),
-});
-
-export const academyOverview = pgTable("academy_overview", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: varchar("title", { length: 255 }).notNull(),
-  description: text("description").notNull(),
-  imageUrl: text("image_url").notNull().default(""),
-});
-
-export const posts = pgTable("posts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  weekNumber: integer("week_number").notNull(),
-  title: varchar("title", { length: 500 }).notNull(),
-  content: text("content").notNull(),
-  authorId: varchar("author_id", { length: 255 }).notNull(),
-  authorNickname: varchar("author_nickname", { length: 100 }).notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  isNotice: boolean("is_notice").notNull().default(false),
-});
-
-export const comments = pgTable("comments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  postId: varchar("post_id", { length: 255 }).notNull(),
-  authorId: varchar("author_id", { length: 255 }).notNull(),
-  authorNickname: varchar("author_nickname", { length: 100 }).notNull(),
-  content: text("content").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const mediaAssets = pgTable("media_assets", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  filename: varchar("filename", { length: 255 }).notNull(),
-  mimeType: varchar("mime_type", { length: 100 }).notNull(),
-  data: text("data").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-// TypeScript types inferred from tables
-export type User = typeof users.$inferSelect;
-export type WeeklyContent = typeof weeklyContent.$inferSelect;
-export type AcademyOverview = typeof academyOverview.$inferSelect;
-export type Post = typeof posts.$inferSelect;
-export type Comment = typeof comments.$inferSelect;
-export type MediaAsset = typeof mediaAssets.$inferSelect;
-
-// Insert schemas and types
 export const insertUserSchema = z.object({
   email: z.string().email("유효한 이메일을 입력해주세요"),
   password: z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다"),
@@ -81,6 +23,17 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+// Weekly Content schema
+export interface WeeklyContent {
+  id: string;
+  weekNumber: number;
+  title: string;
+  youtubeUrl: string;
+  materialsUrl: string;
+  learningObjectives: string;
+  assignment: string;
+}
 
 export const insertWeeklyContentSchema = z.object({
   weekNumber: z.number().min(1).max(5),
@@ -107,6 +60,14 @@ export const updateWeeklyContentSchema = z.object({
 
 export type UpdateWeeklyContent = z.infer<typeof updateWeeklyContentSchema>;
 
+// Academy Overview schema
+export interface AcademyOverview {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+}
+
 export const updateAcademyOverviewSchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요"),
   description: z.string().min(1, "설명을 입력해주세요"),
@@ -116,6 +77,18 @@ export const updateAcademyOverviewSchema = z.object({
 });
 
 export type UpdateAcademyOverview = z.infer<typeof updateAcademyOverviewSchema>;
+
+// Post schema
+export interface Post {
+  id: string;
+  weekNumber: number;
+  title: string;
+  content: string;
+  authorId: string;
+  authorNickname: string;
+  createdAt: string;
+  isNotice: boolean;
+}
 
 export const insertPostSchema = z.object({
   weekNumber: z.number().min(0).max(6),
@@ -133,12 +106,31 @@ export const updatePostSchema = z.object({
 
 export type UpdatePost = z.infer<typeof updatePostSchema>;
 
+// Comment schema
+export interface Comment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorNickname: string;
+  content: string;
+  createdAt: string;
+}
+
 export const insertCommentSchema = z.object({
   postId: z.string(),
   content: z.string().min(1, "댓글 내용을 입력해주세요"),
 });
 
 export type InsertComment = z.infer<typeof insertCommentSchema>;
+
+// Media Asset schema (for image uploads)
+export interface MediaAsset {
+  id: string;
+  filename: string;
+  mimeType: string;
+  data: string;
+  createdAt: string;
+}
 
 // Default weekly content data
 export const defaultWeeklyContent: Omit<WeeklyContent, "id">[] = [
