@@ -8,6 +8,8 @@ import { pool } from "./db";
 const app = express();
 const httpServer = createServer(app);
 
+let dbReady = false;
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -35,6 +37,17 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", dbReady, uptime: process.uptime() });
+});
+
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api") && !dbReady) {
+    return res.status(503).json({ message: "서비스 준비 중입니다. 잠시 후 다시 시도해주세요." });
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -61,19 +74,26 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+async function warmUpDatabase() {
   try {
     log("Checking database connection...");
     const connection = await pool.connect();
     connection.release();
     log("Database connection successful");
+    
+    await storage.initializeDefaultData();
+    log("Default data initialized");
+    
+    dbReady = true;
+    log("Database warm-up complete, ready to serve requests");
   } catch (error) {
     log(`Database connection failed: ${error}`);
-    console.error("Cannot start server without database connection:", error);
+    console.error("Database warm-up failed:", error);
     process.exit(1);
   }
+}
 
-  await storage.initializeDefaultData();
+(async () => {
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -84,9 +104,6 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
@@ -94,10 +111,6 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen(
     {
@@ -107,6 +120,7 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      warmUpDatabase();
     },
   );
 })();
