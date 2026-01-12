@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import ReactMarkdown from "react-markdown";
@@ -9,16 +9,18 @@ import rehypeSanitize from "rehype-sanitize";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Calendar, MessageCircle, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, MessageCircle, Loader2, Trash2, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
-import { insertCommentSchema, type InsertComment, type Post, type Comment } from "@shared/schema";
+import { insertCommentSchema, updatePostSchema, type InsertComment, type UpdatePost, type Post, type Comment } from "@shared/schema";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -27,9 +29,11 @@ export default function PostDetailPage() {
   const postId = params.id || "";
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const qClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { data: post, isLoading: isLoadingPost } = useQuery<Post>({
     queryKey: ["/api/posts/detail", postId],
@@ -39,7 +43,7 @@ export default function PostDetailPage() {
     queryKey: ["/api/comments", postId],
   });
 
-  const form = useForm<InsertComment>({
+  const commentForm = useForm<InsertComment>({
     resolver: zodResolver(insertCommentSchema),
     defaultValues: {
       postId,
@@ -47,14 +51,31 @@ export default function PostDetailPage() {
     },
   });
 
+  const editForm = useForm<UpdatePost>({
+    resolver: zodResolver(updatePostSchema),
+    defaultValues: {
+      title: "",
+      content: "",
+    },
+  });
+
+  useEffect(() => {
+    if (post && isEditDialogOpen) {
+      editForm.reset({
+        title: post.title,
+        content: post.content,
+      });
+    }
+  }, [post, isEditDialogOpen, editForm]);
+
   const createComment = useMutation({
     mutationFn: async (data: InsertComment) => {
       const response = await apiRequest("POST", "/api/comments", data);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/comments", postId] });
-      form.reset({ postId, content: "" });
+      qClient.invalidateQueries({ queryKey: ["/api/comments", postId] });
+      commentForm.reset({ postId, content: "" });
       toast({
         title: "댓글 등록 완료",
         description: "댓글이 성공적으로 등록되었습니다.",
@@ -75,7 +96,7 @@ export default function PostDetailPage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/comments", postId] });
+      qClient.invalidateQueries({ queryKey: ["/api/comments", postId] });
       toast({
         title: "댓글 삭제 완료",
         description: "댓글이 삭제되었습니다.",
@@ -90,12 +111,51 @@ export default function PostDetailPage() {
     },
   });
 
-  const onSubmit = async (data: InsertComment) => {
+  const updatePost = useMutation({
+    mutationFn: async (data: UpdatePost) => {
+      const response = await apiRequest("PUT", `/api/posts/${postId}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      qClient.invalidateQueries({ queryKey: ["/api/posts/detail", postId] });
+      setIsEditDialogOpen(false);
+      toast({
+        title: "수정 완료",
+        description: "게시글이 수정되었습니다.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "수정 실패",
+        description: error instanceof Error ? error.message : "게시글 수정에 실패했습니다",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onCommentSubmit = async (data: InsertComment) => {
     setIsSubmitting(true);
     try {
       await createComment.mutateAsync(data);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const onEditSubmit = async (data: UpdatePost) => {
+    setIsEditing(true);
+    try {
+      await updatePost.mutateAsync(data);
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleEditDialogClose = (open: boolean) => {
+    setIsEditDialogOpen(open);
+    if (!open) {
+      document.body.style.overflow = "";
+      document.body.style.pointerEvents = "";
     }
   };
 
@@ -131,6 +191,17 @@ export default function PostDetailPage() {
         <CardHeader className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <Badge variant="secondary">{post.weekNumber}주차</Badge>
+            {user?.id === post.authorId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditDialogOpen(true)}
+                data-testid="button-edit-post"
+              >
+                <Pencil className="h-4 w-4 mr-1" />
+                수정
+              </Button>
+            )}
           </div>
           <CardTitle className="text-2xl md:text-3xl" data-testid="text-post-title">
             {post.title}
@@ -169,10 +240,10 @@ export default function PostDetailPage() {
 
         <Separator />
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <Form {...commentForm}>
+          <form onSubmit={commentForm.handleSubmit(onCommentSubmit)} className="space-y-4">
             <FormField
-              control={form.control}
+              control={commentForm.control}
               name="content"
               render={({ field }) => (
                 <FormItem>
@@ -257,6 +328,74 @@ export default function PostDetailPage() {
           )}
         </div>
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={handleEditDialogClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>게시글 수정</DialogTitle>
+            <DialogDescription>게시글 제목과 내용을 수정합니다.</DialogDescription>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField
+                control={editForm.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>제목</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="게시글 제목"
+                        data-testid="input-edit-title"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>내용</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="내용을 입력하세요 (마크다운 지원)"
+                        className="min-h-64 resize-y"
+                        data-testid="textarea-edit-content"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleEditDialogClose(false)}
+                  disabled={isEditing}
+                >
+                  취소
+                </Button>
+                <Button type="submit" disabled={isEditing} data-testid="button-save-edit">
+                  {isEditing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      저장 중...
+                    </>
+                  ) : (
+                    "저장"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

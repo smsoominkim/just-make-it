@@ -32,6 +32,7 @@ export interface IStorage {
   getPost(id: string): Promise<Post | undefined>;
   getPostsByWeek(weekNumber: number): Promise<Post[]>;
   getAllPosts(): Promise<Post[]>;
+  updatePost(id: string, data: { title: string; content: string }): Promise<Post | undefined>;
   deletePost(id: string): Promise<void>;
   getUserPostsByWeek(userId: string, weekNumber: number): Promise<Post[]>;
 
@@ -178,6 +179,19 @@ export class MemStorage implements IStorage {
     return Array.from(this.posts.values()).sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
+  }
+
+  async updatePost(id: string, data: { title: string; content: string }): Promise<Post | undefined> {
+    const existing = this.posts.get(id);
+    if (!existing) return undefined;
+
+    const updated: Post = {
+      ...existing,
+      title: data.title,
+      content: data.content,
+    };
+    this.posts.set(id, updated);
+    return updated;
   }
 
   async deletePost(id: string): Promise<void> {

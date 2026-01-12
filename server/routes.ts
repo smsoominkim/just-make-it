@@ -10,6 +10,7 @@ import {
   insertCommentSchema,
   updateAcademyOverviewSchema,
   updateWeeklyContentSchema,
+  updatePostSchema,
 } from "@shared/schema";
 import type { User } from "@shared/schema";
 
@@ -235,6 +236,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json(post);
     } catch (error) {
       res.status(500).json({ message: "게시글 작성에 실패했습니다" });
+    }
+  });
+
+  app.put("/api/posts/:id", requireAuth, async (req, res) => {
+    try {
+      const postId = req.params.id;
+      const post = await storage.getPost(postId);
+      
+      if (!post) {
+        return res.status(404).json({ message: "게시글을 찾을 수 없습니다" });
+      }
+
+      if (post.authorId !== req.session.userId) {
+        return res.status(403).json({ message: "본인이 작성한 글만 수정할 수 있습니다" });
+      }
+
+      const result = updatePostSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.errors[0].message });
+      }
+
+      const updated = await storage.updatePost(postId, result.data);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "게시글 수정에 실패했습니다" });
     }
   });
 

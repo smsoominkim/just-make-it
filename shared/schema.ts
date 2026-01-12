@@ -99,6 +99,13 @@ export const insertPostSchema = z.object({
 
 export type InsertPost = z.infer<typeof insertPostSchema>;
 
+export const updatePostSchema = z.object({
+  title: z.string().min(1, "제목을 입력해주세요"),
+  content: z.string().min(1, "내용을 입력해주세요"),
+});
+
+export type UpdatePost = z.infer<typeof updatePostSchema>;
+
 // Comment schema
 export interface Comment {
   id: string;
