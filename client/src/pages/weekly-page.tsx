@@ -131,7 +131,13 @@ export default function WeeklyPage() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h2 className="text-2xl font-semibold">수강생 과제</h2>
-          <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+          <Dialog open={editorOpen} onOpenChange={(open) => {
+            setEditorOpen(open);
+            if (!open) {
+              document.body.style.overflow = '';
+              document.body.style.pointerEvents = '';
+            }
+          }}>
             <DialogTrigger asChild>
               <Button data-testid="button-write-post">
                 <PenSquare className="h-4 w-4 mr-2" />
@@ -142,7 +148,11 @@ export default function WeeklyPage() {
               <DialogHeader>
                 <DialogTitle>{weekNumber}주차 과제 작성</DialogTitle>
               </DialogHeader>
-              <PostEditor weekNumber={weekNumber} onSuccess={() => setEditorOpen(false)} />
+              <PostEditor weekNumber={weekNumber} onSuccess={() => {
+                setEditorOpen(false);
+                document.body.style.overflow = '';
+                document.body.style.pointerEvents = '';
+              }} />
             </DialogContent>
           </Dialog>
         </div>

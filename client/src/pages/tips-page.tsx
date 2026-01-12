@@ -34,7 +34,13 @@ export default function TipsPage() {
               <p className="text-muted-foreground">유용한 팁을 공유해보세요</p>
             </div>
           </div>
-          <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+          <Dialog open={editorOpen} onOpenChange={(open) => {
+            setEditorOpen(open);
+            if (!open) {
+              document.body.style.overflow = '';
+              document.body.style.pointerEvents = '';
+            }
+          }}>
             <DialogTrigger asChild>
               <Button data-testid="button-write-tip">
                 <PenSquare className="h-4 w-4 mr-2" />
@@ -45,7 +51,11 @@ export default function TipsPage() {
               <DialogHeader>
                 <DialogTitle>팁 작성</DialogTitle>
               </DialogHeader>
-              <TipsEditor onSuccess={() => setEditorOpen(false)} />
+              <TipsEditor onSuccess={() => {
+                setEditorOpen(false);
+                document.body.style.overflow = '';
+                document.body.style.pointerEvents = '';
+              }} />
             </DialogContent>
           </Dialog>
         </div>
