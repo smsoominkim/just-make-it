@@ -13,38 +13,28 @@ if (!process.env.DATABASE_URL) {
 const isProduction = process.env.NODE_ENV === "production";
 
 function getPoolConfig(): pg.PoolConfig {
-  // In production, use individual PG* environment variables if available
-  // These are automatically set by Replit for production deployments
-  if (isProduction && process.env.PGHOST) {
-    const config: pg.PoolConfig = {
-      host: process.env.PGHOST,
-      port: process.env.PGPORT ? parseInt(process.env.PGPORT) : undefined,
-      database: process.env.PGDATABASE,
-      user: process.env.PGUSER,
-      password: process.env.PGPASSWORD,
-      ssl: { rejectUnauthorized: false },
-    };
-    console.log(`Using production PG config: host=${config.host}, database=${config.database}`);
-    return config;
-  }
-  
-  // Fallback: use connector hostname if available
   const connectorHostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  
+  // In production, MUST use connector hostname to access database from Cloud Run
   if (isProduction && connectorHostname) {
+    // Use PGDATABASE, PGUSER, PGPASSWORD if available, otherwise parse from DATABASE_URL
     const databaseUrl = process.env.DATABASE_URL!;
     const url = new URL(databaseUrl);
+    
     const config: pg.PoolConfig = {
       host: connectorHostname,
-      database: url.pathname.slice(1),
-      user: url.username,
-      password: decodeURIComponent(url.password),
+      // No port - connector handles routing
+      database: process.env.PGDATABASE || url.pathname.slice(1),
+      user: process.env.PGUSER || url.username,
+      password: process.env.PGPASSWORD || decodeURIComponent(url.password),
       ssl: { rejectUnauthorized: false },
     };
-    console.log(`Using connector hostname: ${connectorHostname}, database: ${config.database}`);
+    console.log(`Production: Using connector ${connectorHostname}, database: ${config.database}`);
     return config;
   }
   
-  console.log("Using direct database connection (development)");
+  // Development: use DATABASE_URL directly
+  console.log("Development: Using direct database connection");
   return { connectionString: process.env.DATABASE_URL };
 }
 
