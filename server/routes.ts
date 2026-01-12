@@ -198,7 +198,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.get("/api/posts/:weekNumber", async (req, res) => {
     const weekNumber = parseInt(req.params.weekNumber, 10);
-    if (isNaN(weekNumber) || weekNumber < 1 || weekNumber > 5) {
+    if (isNaN(weekNumber) || weekNumber < 1 || weekNumber > 6) {
       return res.status(400).json({ message: "유효하지 않은 주차입니다" });
     }
 
@@ -226,7 +226,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(401).json({ message: "사용자를 찾을 수 없습니다" });
       }
 
-      const post = await storage.createPost(user.id, user.nickname, result.data);
+      const postData = {
+        ...result.data,
+        isNotice: user.role === "admin" ? result.data.isNotice : false,
+      };
+
+      const post = await storage.createPost(user.id, user.nickname, postData);
       res.json(post);
     } catch (error) {
       res.status(500).json({ message: "게시글 작성에 실패했습니다" });

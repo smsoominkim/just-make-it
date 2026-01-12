@@ -69,12 +69,14 @@ export interface Post {
   authorId: string;
   authorNickname: string;
   createdAt: string;
+  isNotice: boolean;
 }
 
 export const insertPostSchema = z.object({
-  weekNumber: z.number().min(1).max(5),
+  weekNumber: z.number().min(0).max(6),
   title: z.string().min(1, "제목을 입력해주세요"),
   content: z.string().min(1, "내용을 입력해주세요"),
+  isNotice: z.boolean().optional(),
 });
 
 export type InsertPost = z.infer<typeof insertPostSchema>;

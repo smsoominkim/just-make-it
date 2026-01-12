@@ -14,6 +14,7 @@ const tabs = [
   { path: "/week/3", label: "3주차" },
   { path: "/week/4", label: "4주차" },
   { path: "/week/5", label: "5주차" },
+  { path: "/tips", label: "팁 모음" },
 ];
 
 export function Navigation() {

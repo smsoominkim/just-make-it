@@ -154,6 +154,7 @@ export class MemStorage implements IStorage {
       authorId,
       authorNickname,
       createdAt: new Date().toISOString(),
+      isNotice: post.isNotice || false,
     };
     this.posts.set(id, newPost);
     return newPost;
@@ -164,9 +165,13 @@ export class MemStorage implements IStorage {
   }
 
   async getPostsByWeek(weekNumber: number): Promise<Post[]> {
-    return Array.from(this.posts.values())
-      .filter((post) => post.weekNumber === weekNumber)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const posts = Array.from(this.posts.values())
+      .filter((post) => post.weekNumber === weekNumber);
+    return posts.sort((a, b) => {
+      if (a.isNotice && !b.isNotice) return -1;
+      if (!a.isNotice && b.isNotice) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   }
 
   async getAllPosts(): Promise<Post[]> {

@@ -11,6 +11,7 @@ import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import AcademyOverviewPage from "@/pages/academy-overview";
 import WeeklyPage from "@/pages/weekly-page";
+import TipsPage from "@/pages/tips-page";
 import PostDetailPage from "@/pages/post-detail";
 import AdminPage from "@/pages/admin";
 import { Loader2 } from "lucide-react";
@@ -94,6 +95,13 @@ function Router() {
         <ProtectedRoute>
           <MainLayout>
             <WeeklyPage />
+          </MainLayout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/tips">
+        <ProtectedRoute>
+          <MainLayout>
+            <TipsPage />
           </MainLayout>
         </ProtectedRoute>
       </Route>

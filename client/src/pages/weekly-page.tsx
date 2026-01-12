@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ExternalLink, Download, CheckCircle2, Circle, PenSquare, User, Calendar, Target } from "lucide-react";
+import { ExternalLink, Download, CheckCircle2, Circle, PenSquare, User, Calendar, Target, Megaphone } from "lucide-react";
 import { PostEditor } from "@/components/post-editor";
 import type { WeeklyContent, Post } from "@shared/schema";
 import { useAuth } from "@/lib/auth";
@@ -161,11 +161,19 @@ export default function WeeklyPage() {
                 href={`/post/${post.id}`}
                 data-testid={`card-post-${post.id}`}
               >
-                <Card className="h-full hover-elevate transition-all duration-200 cursor-pointer">
+                <Card className={`h-full hover-elevate transition-all duration-200 cursor-pointer ${post.isNotice ? "border-primary bg-primary/5 ring-2 ring-primary/20" : ""}`}>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg line-clamp-2" data-testid={`text-post-title-${post.id}`}>
-                      {post.title}
-                    </CardTitle>
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-lg line-clamp-2" data-testid={`text-post-title-${post.id}`}>
+                        {post.title}
+                      </CardTitle>
+                      {post.isNotice && (
+                        <Badge variant="default" className="shrink-0 bg-primary">
+                          <Megaphone className="h-3 w-3 mr-1" />
+                          공지
+                        </Badge>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent className="pt-0">
                     <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
