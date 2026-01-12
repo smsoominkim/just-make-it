@@ -10,33 +10,29 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-function getConnectionString(): string {
+const isProduction = process.env.NODE_ENV === "production";
+const connectorHostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+
+function getPoolConfig(): pg.PoolConfig {
   const databaseUrl = process.env.DATABASE_URL!;
-  const connectorHostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const isProduction = process.env.NODE_ENV === "production";
   
-  if (!isProduction || !connectorHostname) {
-    console.log("Using direct database connection (development)");
-    return databaseUrl;
-  }
-  
-  try {
+  if (isProduction && connectorHostname) {
+    // Parse original URL to extract credentials and database name
     const url = new URL(databaseUrl);
-    url.hostname = connectorHostname;
-    url.port = "";
-    console.log(`Using connector hostname for database: ${connectorHostname}`);
-    return url.toString();
-  } catch (error) {
-    console.error("Failed to parse DATABASE_URL, using as-is:", error);
-    return databaseUrl;
+    const config: pg.PoolConfig = {
+      host: connectorHostname,
+      database: url.pathname.slice(1), // Remove leading "/"
+      user: url.username,
+      password: decodeURIComponent(url.password),
+      ssl: { rejectUnauthorized: false },
+    };
+    console.log(`Using connector hostname: ${connectorHostname}, database: ${config.database}`);
+    return config;
   }
+  
+  console.log("Using direct database connection (development)");
+  return { connectionString: databaseUrl };
 }
 
-const isProduction = process.env.NODE_ENV === "production";
-const connectionString = getConnectionString();
-
-export const pool = new Pool({ 
-  connectionString,
-  ssl: isProduction ? { rejectUnauthorized: false } : undefined,
-});
+export const pool = new Pool(getPoolConfig());
 export const db = drizzle(pool, { schema });
