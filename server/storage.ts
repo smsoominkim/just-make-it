@@ -3,7 +3,7 @@ import type {
   User,
   InsertUser,
   WeeklyContent,
-  InsertWeeklyContent,
+  UpdateWeeklyContent,
   AcademyOverview,
   UpdateAcademyOverview,
   Post,
@@ -23,7 +23,7 @@ export interface IStorage {
 
   getWeeklyContent(weekNumber: number): Promise<WeeklyContent | undefined>;
   getAllWeeklyContent(): Promise<WeeklyContent[]>;
-  updateWeeklyContent(weekNumber: number, content: Partial<InsertWeeklyContent>): Promise<WeeklyContent | undefined>;
+  updateWeeklyContent(weekNumber: number, content: UpdateWeeklyContent): Promise<WeeklyContent | undefined>;
 
   getAcademyOverview(): Promise<AcademyOverview>;
   updateAcademyOverview(data: UpdateAcademyOverview): Promise<AcademyOverview>;
@@ -119,7 +119,7 @@ export class MemStorage implements IStorage {
 
   async updateWeeklyContent(
     weekNumber: number,
-    content: Partial<InsertWeeklyContent>
+    content: UpdateWeeklyContent
   ): Promise<WeeklyContent | undefined> {
     const existing = this.weeklyContent.get(weekNumber);
     if (!existing) return undefined;

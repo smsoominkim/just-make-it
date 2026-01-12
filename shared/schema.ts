@@ -38,13 +38,27 @@ export interface WeeklyContent {
 export const insertWeeklyContentSchema = z.object({
   weekNumber: z.number().min(1).max(5),
   title: z.string().min(1, "제목을 입력해주세요"),
-  youtubeUrl: z.string().url("유효한 URL을 입력해주세요"),
-  materialsUrl: z.string().url("유효한 URL을 입력해주세요"),
+  youtubeUrl: z.string().refine((val) => val === "" || /^https?:\/\/.+/.test(val), {
+    message: "유효한 URL을 입력해주세요",
+  }).optional(),
+  materialsUrl: z.string().refine((val) => val === "" || /^https?:\/\/.+/.test(val), {
+    message: "유효한 URL을 입력해주세요",
+  }).optional(),
   learningObjectives: z.string().optional(),
   assignment: z.string().optional(),
 });
 
 export type InsertWeeklyContent = z.infer<typeof insertWeeklyContentSchema>;
+
+export const updateWeeklyContentSchema = z.object({
+  title: z.string().min(1, "제목을 입력해주세요"),
+  youtubeUrl: z.string().default(""),
+  materialsUrl: z.string().default(""),
+  learningObjectives: z.string().default(""),
+  assignment: z.string().default(""),
+});
+
+export type UpdateWeeklyContent = z.infer<typeof updateWeeklyContentSchema>;
 
 // Academy Overview schema
 export interface AcademyOverview {

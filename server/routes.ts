@@ -9,6 +9,7 @@ import {
   insertPostSchema,
   insertCommentSchema,
   updateAcademyOverviewSchema,
+  updateWeeklyContentSchema,
 } from "@shared/schema";
 import type { User } from "@shared/schema";
 
@@ -178,13 +179,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ message: "유효하지 않은 주차입니다" });
       }
 
-      const { title, youtubeUrl, materialsUrl, assignment } = req.body;
-      const updated = await storage.updateWeeklyContent(weekNumber, {
-        title,
-        youtubeUrl,
-        materialsUrl,
-        assignment: assignment || "",
-      });
+      const result = updateWeeklyContentSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error.errors[0].message });
+      }
+
+      const updated = await storage.updateWeeklyContent(weekNumber, result.data);
 
       if (!updated) {
         return res.status(404).json({ message: "콘텐츠를 찾을 수 없습니다" });
