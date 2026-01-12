@@ -11,8 +11,25 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+function getConnectionString(): string {
+  let connectionString = process.env.DATABASE_URL!;
+  
+  if (process.env.NODE_ENV === 'production' && process.env.REPLIT_CONNECTORS_HOSTNAME) {
+    try {
+      const url = new URL(connectionString);
+      url.hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+      connectionString = url.toString();
+      console.log('Using REPLIT_CONNECTORS_HOSTNAME for database connection');
+    } catch (e) {
+      console.error('Failed to parse DATABASE_URL:', e);
+    }
+  }
+  
+  return connectionString;
+}
+
 export const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
+  connectionString: getConnectionString(),
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
