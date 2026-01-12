@@ -8,6 +8,10 @@ import { pool } from "./db";
 const app = express();
 const httpServer = createServer(app);
 
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 let dbReady = false;
 
 declare module "http" {

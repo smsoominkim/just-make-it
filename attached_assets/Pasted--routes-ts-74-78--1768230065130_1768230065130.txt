@@ -1,0 +1,113 @@
+코드를 분석한 결과, **문제의 원인을 파악**했습니다.
+
+## 문제 진단
+
+### 핵심 원인: 세션 쿠키 설정 문제
+
+`routes.ts` 74-78 라인의 쿠키 설정이 문제입니다:
+
+```javascript
+cookie: {
+  secure: isProduction,      // production에서 true
+  httpOnly: true,
+  maxAge: 24 * 60 * 60 * 1000,
+  sameSite: isProduction ? "none" : "lax",  // production에서 "none"
+},
+```
+
+**Replit 웹 호스팅 환경에서:**
+
+1. `secure: true` + `sameSite: "none"` 조합은 **HTTPS + Cross-site 쿠키**를 위한 설정인데
+2. Replit의 `.replit.app` 도메인은 same-site 요청이므로 `sameSite: "lax"`가 더 적합합니다
+3. 또한 `secure: true`가 제대로 작동하려면 `trust proxy` 설정이 올바르게 되어야 합니다
+
+### 추가 문제: Trust Proxy 위치
+
+`trust proxy` 설정이 session 미들웨어 **직전**에 있어야 하는데, 현재 코드에서는 `registerRoutes` 함수 내에서 설정되고 있어서 타이밍 문제가 있을 수 있습니다.
+
+---
+
+## 해결 방법
+
+### 수정 1: `server/routes.ts` 세션 쿠키 설정 변경
+
+```typescript
+// 74-79 라인을 다음과 같이 수정:
+cookie: {
+  secure: isProduction,
+  httpOnly: true,
+  maxAge: 24 * 60 * 60 * 1000,
+  sameSite: "lax",  // "none"에서 "lax"로 변경
+},
+```
+
+### 수정 2: Trust Proxy 설정 위치 이동 (server/index.ts)
+
+`server/index.ts`에서 `app.use(express.json(...))` **앞에** trust proxy를 설정:
+
+```typescript
+const app = express();
+const httpServer = createServer(app);
+
+// production 환경에서 trust proxy 설정 (맨 앞으로 이동)
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
+// 기존 코드 계속...
+```
+
+그리고 `routes.ts`에서 중복 설정 제거:
+
+```typescript
+// routes.ts의 58-60 라인 삭제
+// if (isProduction) {
+//   app.set("trust proxy", 1);
+// }
+```
+
+---
+
+## Replit에서 적용할 전체 변경사항
+
+**파일 1: `server/index.ts`** - 8번 라인 다음에 추가:
+
+```typescript
+const app = express();
+const httpServer = createServer(app);
+
+// 👇 이 부분 추가
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+```
+
+**파일 2: `server/routes.ts`** - 두 군데 수정:
+
+```typescript
+// 1) 56-60 라인 삭제 또는 주석 처리:
+// const isProduction = process.env.NODE_ENV === "production";
+// if (isProduction) {
+//   app.set("trust proxy", 1);
+// }
+
+// 2) 74-79 라인 수정:
+cookie: {
+  secure: isProduction,
+  httpOnly: true,
+  maxAge: 24 * 60 * 60 * 1000,
+  sameSite: "lax",  // ⚠️ "none"에서 "lax"로 변경
+},
+```
+
+---
+
+## 요약
+
+| 문제 | 원인 | 해결책 |
+|------|------|--------|
+| 로그인 실패 | `sameSite: "none"` 쿠키가 same-site 요청에서 제대로 전달되지 않음 | `sameSite: "lax"`로 변경 |
+| 회원가입 실패 | 세션이 저장되지 않아 즉시 로그인 상태 유지 불가 | 위와 동일 |
+| Trust proxy 위치 | session 미들웨어보다 늦게 설정됨 | `index.ts`로 이동 |
+
+변경 후 Replit에서 앱을 **재시작(Re-run)** 하시면 로그인과 회원가입이 정상 작동할 것입니다.
