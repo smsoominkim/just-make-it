@@ -55,7 +55,9 @@ export interface AcademyOverview {
 export const updateAcademyOverviewSchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요"),
   description: z.string().min(1, "설명을 입력해주세요"),
-  imageUrl: z.string().url("유효한 이미지 URL을 입력해주세요").optional(),
+  imageUrl: z.string().refine((val) => val === "" || /^https?:\/\/.+/.test(val), {
+    message: "유효한 이미지 URL을 입력해주세요",
+  }).optional(),
 });
 
 export type UpdateAcademyOverview = z.infer<typeof updateAcademyOverviewSchema>;
