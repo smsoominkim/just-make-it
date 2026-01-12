@@ -1,10 +1,8 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
-import connectPgSimple from "connect-pg-simple";
 import multer from "multer";
 import { storage } from "./storage";
-import { pool } from "./db";
 import {
   insertUserSchema,
   loginSchema,
@@ -53,25 +51,15 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
-  const isProduction = process.env.NODE_ENV === "production";
-  
-  const PgStore = connectPgSimple(session);
-  
   app.use(
     session({
-      store: new PgStore({
-        pool: pool,
-        tableName: "session",
-        createTableIfMissing: true,
-      }),
       secret: process.env.SESSION_SECRET || "just-make-it-secret-key-2024",
       resave: false,
       saveUninitialized: false,
       cookie: {
-        secure: isProduction,
+        secure: false,
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
-        sameSite: "lax",
       },
     })
   );

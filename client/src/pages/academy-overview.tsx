@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, BookOpen, Users, Rocket, Code2, ChevronRight } from "lucide-react";
+import { Sparkles, BookOpen, Users, Rocket, Code2 } from "lucide-react";
 import type { AcademyOverview } from "@shared/schema";
 
 export default function AcademyOverviewPage() {
@@ -112,23 +111,20 @@ export default function AcademyOverviewPage() {
             { week: 4, title: "Agentic AI Workflow", subtitle: "스스로 일하는 AI 만들기" },
             { week: 5, title: "High-End UX & Control", subtitle: "프로덕트 완성도 높이기" },
           ].map((item) => (
-            <Link key={item.week} href={`/week/${item.week}`}>
-              <Card
-                className="hover-elevate transition-all duration-200 cursor-pointer"
-                data-testid={`link-week-${item.week}`}
-              >
-                <CardContent className="p-6 flex items-center gap-6">
-                  <div className="w-14 h-14 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl">
-                    {item.week}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground">{item.subtitle}</p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardContent>
-              </Card>
-            </Link>
+            <Card
+              key={item.week}
+              className="hover-elevate transition-all duration-200"
+            >
+              <CardContent className="p-6 flex items-center gap-6">
+                <div className="w-14 h-14 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl">
+                  {item.week}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.subtitle}</p>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>

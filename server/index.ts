@@ -3,16 +3,9 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { storage } from "./storage";
-import { pool } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
-
-if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1);
-}
-
-let dbReady = false;
 
 declare module "http" {
   interface IncomingMessage {
@@ -41,17 +34,6 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", dbReady, uptime: process.uptime() });
-});
-
-app.use((req, res, next) => {
-  if (req.path.startsWith("/api") && !dbReady) {
-    return res.status(503).json({ message: "서비스 준비 중입니다. 잠시 후 다시 시도해주세요." });
-  }
-  next();
-});
-
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -78,45 +60,21 @@ app.use((req, res, next) => {
   next();
 });
 
-async function warmUpDatabase(retries = 5, delay = 3000) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      log(`Checking database connection (attempt ${attempt}/${retries})...`);
-      const connection = await pool.connect();
-      connection.release();
-      log("Database connection successful");
-      
-      await storage.initializeDefaultData();
-      log("Default data initialized");
-      
-      dbReady = true;
-      log("Database warm-up complete, ready to serve requests");
-      return;
-    } catch (error) {
-      log(`Database connection failed (attempt ${attempt}/${retries}): ${error}`);
-      
-      if (attempt < retries) {
-        log(`Retrying in ${delay / 1000} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      } else {
-        console.error("Database warm-up failed after all retries:", error);
-        log("App will continue without database - API requests will return 503");
-      }
-    }
-  }
-}
-
 (async () => {
+  await storage.initializeDefaultData();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    log(`Error: ${message}`);
     res.status(status).json({ message });
+    throw err;
   });
 
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
@@ -124,6 +82,10 @@ async function warmUpDatabase(retries = 5, delay = 3000) {
     await setupVite(httpServer, app);
   }
 
+  // ALWAYS serve the app on the port specified in the environment variable PORT
+  // Other ports are firewalled. Default to 5000 if not specified.
+  // this serves both the API and the client.
+  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen(
     {
@@ -133,7 +95,6 @@ async function warmUpDatabase(retries = 5, delay = 3000) {
     },
     () => {
       log(`serving on port ${port}`);
-      warmUpDatabase();
     },
   );
 })();
