@@ -7,9 +7,9 @@
 ## Features
 - **이메일 기반 인증**: 간편한 회원가입 및 로그인
 - **탭 기반 네비게이션**: 아카데미 개요 + 5주차 콘텐츠
-- **주차별 학습 페이지**: YouTube 강의 영상, 자료 다운로드, 진행률 표시
-- **과제 게시판**: 템플릿 기반 과제 작성, 댓글 기능
-- **관리자 페이지**: 콘텐츠, 회원, 게시글 관리
+- **주차별 학습 페이지**: YouTube 강의 영상, 자료 다운로드, 주차별 과제 표시
+- **과제 게시판**: 마크다운 에디터 + 이미지 업로드, 댓글 기능
+- **관리자 페이지**: 콘텐츠, 회원, 게시글, 주차별 과제 관리
 - **다크 모드 지원**: 라이트/다크 테마 전환
 
 ## Project Structure
@@ -62,9 +62,13 @@ shared/
 - `POST /api/comments` - 댓글 작성
 - `DELETE /api/comments/:id` - 댓글 삭제 (작성자 또는 관리자)
 
+### 미디어 업로드
+- `POST /api/uploads` - 이미지 업로드 (인증 필요, 5MB 제한)
+- `GET /api/uploads/:id` - 업로드된 이미지 조회
+
 ### 관리자
 - `GET /api/admin/weekly-content` - 전체 주차 콘텐츠
-- `PUT /api/admin/weekly-content/:weekNumber` - 주차 콘텐츠 수정
+- `PUT /api/admin/weekly-content/:weekNumber` - 주차 콘텐츠 수정 (과제 포함)
 - `GET /api/admin/users` - 회원 목록
 - `DELETE /api/admin/users/:id` - 회원 삭제
 - `GET /api/admin/posts` - 게시글 목록
