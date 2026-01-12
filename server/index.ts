@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { storage } from "./storage";
+import { pool } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -62,10 +63,17 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    await storage.initializeDefaultData();
+    log("Checking database connection...");
+    const connection = await pool.connect();
+    connection.release();
+    log("Database connection successful");
   } catch (error) {
-    log(`Warning: Could not initialize default data: ${error}`);
+    log(`Database connection failed: ${error}`);
+    console.error("Cannot start server without database connection:", error);
+    process.exit(1);
   }
+
+  await storage.initializeDefaultData();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
