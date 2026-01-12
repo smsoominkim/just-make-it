@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ExternalLink, Download, CheckCircle2, Circle, PenSquare, User, Calendar } from "lucide-react";
+import { ExternalLink, Download, CheckCircle2, Circle, PenSquare, User, Calendar, Target } from "lucide-react";
 import { PostEditor } from "@/components/post-editor";
 import type { WeeklyContent, Post } from "@shared/schema";
 import { useAuth } from "@/lib/auth";
@@ -108,6 +108,22 @@ export default function WeeklyPage() {
                 </a>
               </Button>
             </div>
+          )}
+
+          {weeklyContent?.assignment && (
+            <Card className="max-w-2xl mx-auto border-primary/20 bg-primary/5" data-testid="card-assignment">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  이번 주 과제
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-base font-medium" data-testid="text-assignment">
+                  {weeklyContent.assignment}
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

@@ -3,6 +3,9 @@ import { useParams, Link, useLocation } from "wouter";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, User, Calendar, MessageCircle, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, MessageCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
@@ -150,8 +153,10 @@ export default function PostDetailPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="prose prose-neutral dark:prose-invert max-w-none whitespace-pre-wrap" data-testid="text-post-content">
-            {post.content}
+          <div className="prose prose-neutral dark:prose-invert max-w-none" data-testid="text-post-content">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+              {post.content}
+            </ReactMarkdown>
           </div>
         </CardContent>
       </Card>

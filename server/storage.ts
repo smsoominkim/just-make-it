@@ -10,6 +10,7 @@ import type {
   InsertPost,
   Comment,
   InsertComment,
+  MediaAsset,
 } from "@shared/schema";
 import { defaultWeeklyContent } from "@shared/schema";
 
@@ -38,6 +39,9 @@ export interface IStorage {
   getComment(id: string): Promise<Comment | undefined>;
   getCommentsByPost(postId: string): Promise<Comment[]>;
   deleteComment(id: string): Promise<void>;
+
+  createMediaAsset(filename: string, mimeType: string, data: string): Promise<MediaAsset>;
+  getMediaAsset(id: string): Promise<MediaAsset | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -46,12 +50,14 @@ export class MemStorage implements IStorage {
   private academyOverview: AcademyOverview;
   private posts: Map<string, Post>;
   private comments: Map<string, Comment>;
+  private mediaAssets: Map<string, MediaAsset>;
 
   constructor() {
     this.users = new Map();
     this.weeklyContent = new Map();
     this.posts = new Map();
     this.comments = new Map();
+    this.mediaAssets = new Map();
 
     defaultWeeklyContent.forEach((content) => {
       const id = randomUUID();
@@ -171,11 +177,10 @@ export class MemStorage implements IStorage {
 
   async deletePost(id: string): Promise<void> {
     this.posts.delete(id);
-    for (const [commentId, comment] of this.comments.entries()) {
-      if (comment.postId === id) {
-        this.comments.delete(commentId);
-      }
-    }
+    const commentsToDelete = Array.from(this.comments.entries())
+      .filter(([, comment]) => comment.postId === id)
+      .map(([commentId]) => commentId);
+    commentsToDelete.forEach((commentId) => this.comments.delete(commentId));
   }
 
   async getUserPostsByWeek(userId: string, weekNumber: number): Promise<Post[]> {
@@ -210,6 +215,23 @@ export class MemStorage implements IStorage {
 
   async deleteComment(id: string): Promise<void> {
     this.comments.delete(id);
+  }
+
+  async createMediaAsset(filename: string, mimeType: string, data: string): Promise<MediaAsset> {
+    const id = randomUUID();
+    const asset: MediaAsset = {
+      id,
+      filename,
+      mimeType,
+      data,
+      createdAt: new Date().toISOString(),
+    };
+    this.mediaAssets.set(id, asset);
+    return asset;
+  }
+
+  async getMediaAsset(id: string): Promise<MediaAsset | undefined> {
+    return this.mediaAssets.get(id);
   }
 }
 

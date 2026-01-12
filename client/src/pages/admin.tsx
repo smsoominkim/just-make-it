@@ -230,7 +230,7 @@ function WeeklyContentManagement() {
   });
 
   const updateContent = useMutation({
-    mutationFn: async (data: { weekNumber: number; title: string; youtubeUrl: string; materialsUrl: string }) => {
+    mutationFn: async (data: { weekNumber: number; title: string; youtubeUrl: string; materialsUrl: string; assignment: string }) => {
       const response = await apiRequest("PUT", `/api/admin/weekly-content/${data.weekNumber}`, data);
       return response.json();
     },
@@ -259,6 +259,7 @@ function WeeklyContentManagement() {
         title: formData.get("title") as string,
         youtubeUrl: formData.get("youtubeUrl") as string,
         materialsUrl: formData.get("materialsUrl") as string,
+        assignment: formData.get("assignment") as string,
       });
     } finally {
       setSavingWeek(null);
@@ -317,6 +318,14 @@ function WeeklyContentManagement() {
                   name="materialsUrl"
                   defaultValue={content.materialsUrl}
                   data-testid={`input-week-${content.weekNumber}-materials`}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">이번 주 과제</label>
+                <Input
+                  name="assignment"
+                  defaultValue={content.assignment}
+                  data-testid={`input-week-${content.weekNumber}-assignment`}
                 />
               </div>
               <Button

@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
+import multer from "multer";
 import { storage } from "./storage";
 import {
   insertUserSchema,
@@ -10,6 +11,18 @@ import {
   updateAcademyOverviewSchema,
 } from "@shared/schema";
 import type { User } from "@shared/schema";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("이미지 파일만 업로드 가능합니다"));
+    }
+  },
+});
 
 declare module "express-session" {
   interface SessionData {
@@ -165,11 +178,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ message: "유효하지 않은 주차입니다" });
       }
 
-      const { title, youtubeUrl, materialsUrl } = req.body;
+      const { title, youtubeUrl, materialsUrl, assignment } = req.body;
       const updated = await storage.updateWeeklyContent(weekNumber, {
         title,
         youtubeUrl,
         materialsUrl,
+        assignment: assignment || "",
       });
 
       if (!updated) {
@@ -296,6 +310,41 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json({ message: "회원이 삭제되었습니다" });
     } catch (error) {
       res.status(500).json({ message: "회원 삭제에 실패했습니다" });
+    }
+  });
+
+  app.post("/api/uploads", requireAuth, upload.single("image"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "이미지 파일이 필요합니다" });
+      }
+
+      const base64Data = req.file.buffer.toString("base64");
+      const asset = await storage.createMediaAsset(
+        req.file.originalname,
+        req.file.mimetype,
+        base64Data
+      );
+
+      res.json({ id: asset.id, url: `/api/uploads/${asset.id}` });
+    } catch (error) {
+      res.status(500).json({ message: "이미지 업로드에 실패했습니다" });
+    }
+  });
+
+  app.get("/api/uploads/:id", async (req, res) => {
+    try {
+      const asset = await storage.getMediaAsset(req.params.id);
+      if (!asset) {
+        return res.status(404).json({ message: "이미지를 찾을 수 없습니다" });
+      }
+
+      const buffer = Buffer.from(asset.data, "base64");
+      res.set("Content-Type", asset.mimeType);
+      res.set("Cache-Control", "public, max-age=31536000");
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({ message: "이미지 조회에 실패했습니다" });
     }
   });
 

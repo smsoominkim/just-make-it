@@ -31,6 +31,7 @@ export interface WeeklyContent {
   title: string;
   youtubeUrl: string;
   materialsUrl: string;
+  assignment: string;
 }
 
 export const insertWeeklyContentSchema = z.object({
@@ -38,6 +39,7 @@ export const insertWeeklyContentSchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요"),
   youtubeUrl: z.string().url("유효한 URL을 입력해주세요"),
   materialsUrl: z.string().url("유효한 URL을 입력해주세요"),
+  assignment: z.string().optional(),
 });
 
 export type InsertWeeklyContent = z.infer<typeof insertWeeklyContentSchema>;
@@ -94,6 +96,15 @@ export const insertCommentSchema = z.object({
 
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 
+// Media Asset schema (for image uploads)
+export interface MediaAsset {
+  id: string;
+  filename: string;
+  mimeType: string;
+  data: string;
+  createdAt: string;
+}
+
 // Default weekly content data
 export const defaultWeeklyContent: Omit<WeeklyContent, "id">[] = [
   {
@@ -101,30 +112,35 @@ export const defaultWeeklyContent: Omit<WeeklyContent, "id">[] = [
     title: "AI-Native Creation: 웹 서비스 기획부터 배포까지",
     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     materialsUrl: "https://drive.google.com/",
+    assignment: "내 서비스 기획안(PRD) 작성하고 핵심 기능을 웹으로 구현하기",
   },
   {
     weekNumber: 2,
     title: "Mobile App Expansion: 내 서비스를 앱으로 확장",
     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     materialsUrl: "https://drive.google.com/",
+    assignment: "나의 웹 서비스를 모바일 앱으로 만들기",
   },
   {
     weekNumber: 3,
     title: "Market Ready: 실전 같은 오류 해결과 마케팅",
     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     materialsUrl: "https://drive.google.com/",
+    assignment: "나의 서비스 오류를 수정하고 구글 검색에 걸리게 설정하기",
   },
   {
     weekNumber: 4,
     title: "Agentic AI Workflow: 스스로 일하는 AI 만들기",
     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     materialsUrl: "https://drive.google.com/",
+    assignment: "내 서비스에 Agentic AI 워크플로우 적용해서 고도화하기",
   },
   {
     weekNumber: 5,
     title: "High-End UX & Control: 프로덕트 완성도 높이기",
     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     materialsUrl: "https://drive.google.com/",
+    assignment: "최종 서비스 만들고 주변에 알리기",
   },
 ];
 
