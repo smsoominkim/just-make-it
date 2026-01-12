@@ -110,21 +110,39 @@ export default function WeeklyPage() {
             </div>
           )}
 
-          {weeklyContent?.assignment && (
-            <Card className="max-w-2xl mx-auto border-primary/20 bg-primary/5" data-testid="card-assignment">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  이번 주 과제
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-base font-medium" data-testid="text-assignment">
-                  {weeklyContent.assignment}
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          <div className="space-y-4 px-2 md:px-4">
+            {weeklyContent?.learningObjectives && (
+              <Card className="border-secondary/30 bg-secondary/10" data-testid="card-learning-objectives">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-secondary-foreground" />
+                    학습 목표
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-base whitespace-pre-line" data-testid="text-learning-objectives">
+                    {weeklyContent.learningObjectives}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {weeklyContent?.assignment && (
+              <Card className="border-primary/20 bg-primary/5" data-testid="card-assignment">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    이번 주 과제
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-base font-medium" data-testid="text-assignment">
+                    {weeklyContent.assignment}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
 

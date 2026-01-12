@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -92,7 +92,7 @@ function OverviewManagement() {
     },
   });
 
-  useState(() => {
+  useEffect(() => {
     if (overview) {
       form.reset({
         title: overview.title,
@@ -100,7 +100,7 @@ function OverviewManagement() {
         imageUrl: overview.imageUrl || "",
       });
     }
-  });
+  }, [overview, form]);
 
   const updateOverview = useMutation({
     mutationFn: async (data: { title: string; description: string; imageUrl: string }) => {
@@ -154,7 +154,6 @@ function OverviewManagement() {
                   <FormControl>
                     <Input
                       placeholder="아카데미 타이틀"
-                      defaultValue={overview?.title}
                       data-testid="input-overview-title"
                       {...field}
                     />
@@ -173,7 +172,6 @@ function OverviewManagement() {
                     <Textarea
                       placeholder="아카데미 설명"
                       className="min-h-32"
-                      defaultValue={overview?.description}
                       data-testid="textarea-overview-description"
                       {...field}
                     />
@@ -191,7 +189,6 @@ function OverviewManagement() {
                   <FormControl>
                     <Input
                       placeholder="https://example.com/image.jpg"
-                      defaultValue={overview?.imageUrl}
                       data-testid="input-overview-image"
                       {...field}
                     />
@@ -230,7 +227,7 @@ function WeeklyContentManagement() {
   });
 
   const updateContent = useMutation({
-    mutationFn: async (data: { weekNumber: number; title: string; youtubeUrl: string; materialsUrl: string; assignment: string }) => {
+    mutationFn: async (data: { weekNumber: number; title: string; youtubeUrl: string; materialsUrl: string; learningObjectives: string; assignment: string }) => {
       const response = await apiRequest("PUT", `/api/admin/weekly-content/${data.weekNumber}`, data);
       return response.json();
     },
@@ -259,6 +256,7 @@ function WeeklyContentManagement() {
         title: formData.get("title") as string,
         youtubeUrl: formData.get("youtubeUrl") as string,
         materialsUrl: formData.get("materialsUrl") as string,
+        learningObjectives: formData.get("learningObjectives") as string,
         assignment: formData.get("assignment") as string,
       });
     } finally {
@@ -318,6 +316,15 @@ function WeeklyContentManagement() {
                   name="materialsUrl"
                   defaultValue={content.materialsUrl}
                   data-testid={`input-week-${content.weekNumber}-materials`}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">학습 목표</label>
+                <Textarea
+                  name="learningObjectives"
+                  defaultValue={content.learningObjectives}
+                  className="min-h-32"
+                  data-testid={`input-week-${content.weekNumber}-objectives`}
                 />
               </div>
               <div className="space-y-2">

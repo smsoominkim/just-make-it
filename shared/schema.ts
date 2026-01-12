@@ -31,6 +31,7 @@ export interface WeeklyContent {
   title: string;
   youtubeUrl: string;
   materialsUrl: string;
+  learningObjectives: string;
   assignment: string;
 }
 
@@ -39,6 +40,7 @@ export const insertWeeklyContentSchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요"),
   youtubeUrl: z.string().url("유효한 URL을 입력해주세요"),
   materialsUrl: z.string().url("유효한 URL을 입력해주세요"),
+  learningObjectives: z.string().optional(),
   assignment: z.string().optional(),
 });
 
@@ -116,6 +118,11 @@ export const defaultWeeklyContent: Omit<WeeklyContent, "id">[] = [
     title: "AI-Native Creation: 웹 서비스 기획부터 배포까지",
     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     materialsUrl: "https://drive.google.com/",
+    learningObjectives: `1. 전체 개발 Stack을 이해한다. (GUI-프론트 - 백엔드/DB-API-배포-운영)
+2. Replit 환경에서 PM 레벨의 프롬프팅 기법을 통해 웹 앱 프로젝트를 생성하고 기본 구조를 설계한다.
+3. Replit DB를 연동하여 회원가입 및 데이터 저장/수정/삭제 기능을 구현한다.
+4. 외부 API를 연결한다.
+5. 웹 서비스를 온라인에 배포한다.`,
     assignment: "내 서비스 기획안(PRD) 작성하고 핵심 기능을 웹으로 구현하기",
   },
   {
@@ -123,6 +130,10 @@ export const defaultWeeklyContent: Omit<WeeklyContent, "id">[] = [
     title: "Mobile App Expansion: 내 서비스를 앱으로 확장",
     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     materialsUrl: "https://drive.google.com/",
+    learningObjectives: `1. React Native를 활용하여 새 모바일 앱을 만든다.
+2. React Native의 기본 개념과 웹(React)과의 차이점을 이해한다.
+3. AI의 도움을 받아 기존 웹 프로젝트 코드를 React Native 코드로 변환한다.
+4. 모바일 시뮬레이터 또는 실제 기기에서 내가 만든 앱을 실행하고 테스트한다.`,
     assignment: "나의 웹 서비스를 모바일 앱으로 만들기",
   },
   {
@@ -130,6 +141,10 @@ export const defaultWeeklyContent: Omit<WeeklyContent, "id">[] = [
     title: "Market Ready: 실전 같은 오류 해결과 마케팅",
     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     materialsUrl: "https://drive.google.com/",
+    learningObjectives: `1. AI 디버깅을 통해 서비스의 오류를 찾아 수정한다.
+2. 발생한 오류를 유형별로 카테고리화하고, 케이스별 수정 전략을 수립하여 문제 해결 능력을 기른다.
+3. AI에게 명확한 수정 지시를 내리고 결과물을 검증하는 고도화된 AI 매니징 스킬을 체득한다.
+4. 메타 태그 설정 등을 통해 서비스의 구글 노출 및 링크 클릭률을 극대화한다.`,
     assignment: "나의 서비스 오류를 수정하고 구글 검색에 걸리게 설정하기",
   },
   {
@@ -137,6 +152,9 @@ export const defaultWeeklyContent: Omit<WeeklyContent, "id">[] = [
     title: "Agentic AI Workflow: 스스로 일하는 AI 만들기",
     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     materialsUrl: "https://drive.google.com/",
+    learningObjectives: `1. Mission-Context-Work 프레임워크를 적용하여 AI를 시니어 개발자처럼 부리는 리더십을 익힌다.
+2. 사용자 관심사 기반 매일 지정된 시간에 뉴스레터를 자동 생성하고 발송하는 서비스를 구현한다.
+3. 서비스가 죽거나 에러가 났을 때 이메일/슬랙으로 알림이 오도록 설정하여 24시간 관제 시스템을 만든다.`,
     assignment: "내 서비스에 Agentic AI 워크플로우 적용해서 고도화하기",
   },
   {
@@ -144,6 +162,9 @@ export const defaultWeeklyContent: Omit<WeeklyContent, "id">[] = [
     title: "High-End UX & Control: 프로덕트 완성도 높이기",
     youtubeUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     materialsUrl: "https://drive.google.com/",
+    learningObjectives: `1. 디자인 시스템 통일과 정교한 상태 피드백(GUI)을 구현하여 상용 서비스 수준의 사용자 경험을 완성한다.
+2. 데이터베이스에 직접 접속하지 않고도, 웹에서 회원 정보 등을 핵심 데이터를 조회/수정/삭제하는 데이터 관리자 페이지를 구축한다.
+3. 서비스 아키텍처와 API 연결 상태 등을 시각화한 시스템 관리자 페이지를 구축한다.`,
     assignment: "최종 서비스 만들고 주변에 알리기",
   },
 ];
