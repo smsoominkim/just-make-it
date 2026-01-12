@@ -459,6 +459,8 @@ function PostManagement() {
 
   const { data: posts, isLoading } = useQuery<Post[]>({
     queryKey: ["/api/admin/posts"],
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const deletePost = useMutation({
