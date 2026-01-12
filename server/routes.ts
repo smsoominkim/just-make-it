@@ -51,15 +51,22 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
+  const isProduction = process.env.NODE_ENV === "production";
+  
+  if (isProduction) {
+    app.set("trust proxy", 1);
+  }
+  
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "just-make-it-secret-key-2024",
       resave: false,
       saveUninitialized: false,
       cookie: {
-        secure: false,
+        secure: isProduction,
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
+        sameSite: isProduction ? "none" : "lax",
       },
     })
   );
